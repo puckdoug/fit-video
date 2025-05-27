@@ -20,8 +20,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .short('o')
                 .long("output")
                 .value_name("OUTPUT_FILE")
-                .help("The output video file")
-                .required(true)
+                .help("The output video file (defaults to movie.mp4)")
+                .required(false)
                 .value_parser(clap::value_parser!(PathBuf))
         )
         .arg(
@@ -35,7 +35,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .get_matches();
 
     let fit_file = matches.get_one::<PathBuf>("fit").unwrap();
-    let output_file = matches.get_one::<PathBuf>("output").unwrap();
+    let output_file = matches
+        .get_one::<PathBuf>("output")
+        .cloned()
+        .unwrap_or_else(|| PathBuf::from("movie.mp4"));
     let videos: Vec<&PathBuf> = matches.get_many::<PathBuf>("videos").unwrap().collect();
 
     // Verify that the fit file exists

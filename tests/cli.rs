@@ -35,7 +35,7 @@ fn output_long_flag() {
     cmd.arg("--output")
         .arg(output_file.path())
         .assert()
-        .failure(); // Expecting failure without required input files
+        .failure(); // Expecting failure without fit and video files
 }
 
 #[test]
@@ -44,7 +44,7 @@ fn output_short_flag() {
     let output_file = temp.child("output.mp4");
 
     let mut cmd = Command::cargo_bin("fit-video").unwrap();
-    cmd.arg("-o").arg(output_file.path()).assert().failure(); // Expecting failure without required input files
+    cmd.arg("-o").arg(output_file.path()).assert().failure(); // Expecting failure without fit and video files
 }
 
 #[test]
@@ -54,7 +54,7 @@ fn fit_long_flag() {
     fit_file.touch().unwrap();
 
     let mut cmd = Command::cargo_bin("fit-video").unwrap();
-    cmd.arg("--fit").arg(fit_file.path()).assert().failure(); // Expecting failure without output and video files
+    cmd.arg("--fit").arg(fit_file.path()).assert().failure(); // Expecting failure without video files
 }
 
 #[test]
@@ -64,7 +64,7 @@ fn fit_short_flag() {
     fit_file.touch().unwrap();
 
     let mut cmd = Command::cargo_bin("fit-video").unwrap();
-    cmd.arg("-f").arg(fit_file.path()).assert().failure(); // Expecting failure without output and video files
+    cmd.arg("-f").arg(fit_file.path()).assert().failure(); // Expecting failure without video files
 }
 
 #[test]
@@ -76,7 +76,7 @@ fn video_files_no_flag() {
     video2.touch().unwrap();
 
     let mut cmd = Command::cargo_bin("fit-video").unwrap();
-    cmd.arg(video1.path()).arg(video2.path()).assert().failure(); // Expecting failure without fit and output files
+    cmd.arg(video1.path()).arg(video2.path()).assert().failure(); // Expecting failure without fit file
 }
 
 #[test]
@@ -99,7 +99,8 @@ fn complete_valid_command() {
         .arg(video1.path())
         .arg(video2.path())
         .assert()
-        .success(); // All required arguments provided
+        .success()
+        .stdout(predicate::str::contains(output_file.path().to_string_lossy().as_ref())); // All required arguments provided
 }
 
 #[test]
@@ -119,24 +120,44 @@ fn complete_valid_command_short_flags() {
         .arg(output_file.path())
         .arg(video1.path())
         .assert()
-        .success(); // All required arguments with short flags
+        .success()
+        .stdout(predicate::str::contains(output_file.path().to_string_lossy().as_ref())); // All required arguments with short flags
 }
 
 #[test]
-fn missing_output_file() {
+fn without_output_flag() {
     let temp = assert_fs::TempDir::new().unwrap();
     let fit_file = temp.child("activity.fit");
     let video1 = temp.child("video1.mp4");
+    
     fit_file.touch().unwrap();
     video1.touch().unwrap();
-
+    
     let mut cmd = Command::cargo_bin("fit-video").unwrap();
     cmd.arg("--fit")
         .arg(fit_file.path())
         .arg(video1.path())
         .assert()
-        .failure()
-        .stderr(predicate::str::contains("output"));
+        .success()
+        .stdout(predicate::str::contains("movie.mp4")); // Should use default output file
+}
+
+#[test]
+fn without_output_flag_short() {
+    let temp = assert_fs::TempDir::new().unwrap();
+    let fit_file = temp.child("activity.fit");
+    let video1 = temp.child("video1.mp4");
+    
+    fit_file.touch().unwrap();
+    video1.touch().unwrap();
+    
+    let mut cmd = Command::cargo_bin("fit-video").unwrap();
+    cmd.arg("-f")
+        .arg(fit_file.path())
+        .arg(video1.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("movie.mp4")); // Should use default output file
 }
 
 #[test]
