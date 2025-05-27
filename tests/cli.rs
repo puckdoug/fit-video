@@ -54,7 +54,7 @@ fn fit_long_flag() {
     fit_file.touch().unwrap();
 
     let mut cmd = Command::cargo_bin("fit-video").unwrap();
-    cmd.arg("--fit").arg(fit_file.path()).assert().failure(); // Expecting failure without video files
+    cmd.arg("--fit").arg(fit_file.path()).assert().failure(); // Expecting failure without video files or metrics flag
 }
 
 #[test]
@@ -64,7 +64,7 @@ fn fit_short_flag() {
     fit_file.touch().unwrap();
 
     let mut cmd = Command::cargo_bin("fit-video").unwrap();
-    cmd.arg("-f").arg(fit_file.path()).assert().failure(); // Expecting failure without video files
+    cmd.arg("-f").arg(fit_file.path()).assert().failure(); // Expecting failure without video files or metrics flag
 }
 
 #[test]
@@ -161,6 +161,72 @@ fn without_output_flag_short() {
 }
 
 #[test]
+fn metrics_long_flag() {
+    let temp = assert_fs::TempDir::new().unwrap();
+    let fit_file = temp.child("activity.fit");
+    fit_file.touch().unwrap();
+    
+    let mut cmd = Command::cargo_bin("fit-video").unwrap();
+    cmd.arg("--fit")
+        .arg(fit_file.path())
+        .arg("--metrics")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Metrics found in FIT file"));
+}
+
+#[test]
+fn metrics_short_flag() {
+    let temp = assert_fs::TempDir::new().unwrap();
+    let fit_file = temp.child("activity.fit");
+    fit_file.touch().unwrap();
+    
+    let mut cmd = Command::cargo_bin("fit-video").unwrap();
+    cmd.arg("-f")
+        .arg(fit_file.path())
+        .arg("-m")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Metrics found in FIT file"));
+}
+
+#[test]
+fn metrics_with_output() {
+    let temp = assert_fs::TempDir::new().unwrap();
+    let fit_file = temp.child("activity.fit");
+    let output_file = temp.child("metrics.txt");
+    fit_file.touch().unwrap();
+    
+    let mut cmd = Command::cargo_bin("fit-video").unwrap();
+    cmd.arg("--fit")
+        .arg(fit_file.path())
+        .arg("--metrics")
+        .arg("--output")
+        .arg(output_file.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Metrics found in FIT file"));
+}
+
+#[test]
+fn metrics_with_videos() {
+    let temp = assert_fs::TempDir::new().unwrap();
+    let fit_file = temp.child("activity.fit");
+    let video1 = temp.child("video1.mp4");
+    fit_file.touch().unwrap();
+    video1.touch().unwrap();
+    
+    let mut cmd = Command::cargo_bin("fit-video").unwrap();
+    cmd.arg("--fit")
+        .arg(fit_file.path())
+        .arg("--metrics")
+        .arg(video1.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Metrics found in FIT file"));
+}
+
+#[test]
 fn missing_fit_file() {
     let temp = assert_fs::TempDir::new().unwrap();
     let video1 = temp.child("video1.mp4");
@@ -177,7 +243,7 @@ fn missing_fit_file() {
 }
 
 #[test]
-fn missing_video_files() {
+fn missing_video_files_without_metrics() {
     let temp = assert_fs::TempDir::new().unwrap();
     let fit_file = temp.child("activity.fit");
     let output_file = temp.child("output.mp4");
@@ -190,5 +256,5 @@ fn missing_video_files() {
         .arg(output_file.path())
         .assert()
         .failure()
-        .stderr(predicate::str::contains("video"));
+        .stderr(predicate::str::contains("Video"));
 }
